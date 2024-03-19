@@ -1,0 +1,19 @@
+{
+  "name": "reviews",
+  "version": "1.0.0",
+  "description": "Project Atelier",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "add-data": "mongosh --file ./db/testData.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.3",
+    "mongoose": "^8.2.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}
