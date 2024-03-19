@@ -2,14 +2,16 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const model = mongoose.model;
-//require('dotenv').config();
-
 mongoose.connect('mongodb://localhost:27017/reviews');
-
 
 const characteristicSchema = Schema({
   name: String,
   })
+
+const reviewCharacteristicSchema = Schema({
+   _characteristic: {type: Schema.Types.ObjectId, ref: 'Characteristic'},
+    rating: Number
+}, {_id: false})
 
 const reviewSchema = Schema({
   productID: Number,
@@ -24,10 +26,7 @@ const reviewSchema = Schema({
   reported: Boolean,
   response: String,
   photos: [String],
-  characteristics: [{
-    _characteristics: {type: Schema.Types.ObjectId, ref: 'Characteristic'},
-    rating: Number
-  }],
+  characteristics: [reviewCharacteristicSchema],
 })
 let Characteristic = model('Characteristic', characteristicSchema);
 let Review = model('Review', reviewSchema);

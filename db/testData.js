@@ -1,6 +1,8 @@
 /* eslint-disable no-undef */
 db = connect( 'mongodb://localhost:27017/reviews' );
 db.characteristics.drop({})
+db.reviews.drop({});
+/*
 const a = db.characteristics.insertMany( [
    {
       name: 'Fit',
@@ -12,8 +14,8 @@ const a = db.characteristics.insertMany( [
       name: 'Comfort',
    }
 ] )
-
-db.reviews.drop({})
+*/
+/*
 db.reviews.insertOne(
   { productID: 123456,
     reviewer_name: "Chris",
@@ -33,3 +35,4 @@ db.reviews.insertOne(
     }]
   }
 )
+*/
