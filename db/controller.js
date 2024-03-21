@@ -1,18 +1,9 @@
 
 const db = require('./schema.js')
 const test = async()=>{
-  const a = await db.characteristic.insertMany( [
-    {
-       name: 'Fit',
-    },
-    {
-       name: 'Quality',
-    },
-    {
-       name: 'Comfort',
-    }
- ] )
+}
 //console.log(a);
+/*
  await db.reviews.create(
    { productID: 123456,
      reviewer_name: "Chris",
@@ -46,21 +37,64 @@ const test = async()=>{
    populate: {path: '_characteristic', populate: 'name'},
  },)
  .exec()
-return res
-}
-test()
-.then((res)=>{
-  console.log('First res', res)
-  let formatted = res.characteristics.map((item)=>{
-   // console.log(item)
-    return {[item._characteristic.name]: {
-      rating: item.rating,
-      id: item._characteristic._id
-    }
+ */
+
+/*
+ const formatReviewList = ((objArray)=>{
+  const result = objArray.map((item)=>{
+    return {
+      ...item,
+      characteristics: item.char,
+      char: undefined
     }
   })
-  formatted = Object.assign({}, ...formatted);
-  let z = res.toObject();
-  z.characteristics = formatted;
-  console.log(z);
+  return result;
+  });
+
+
+const findReviews  = async (params) => {
+  return db.reviews.find({product_id: params.product_id}, {'_id': 0, 'char._id':0}).lean().exec();
+  };
+
+module.exports.getByProductID =  (params) => {
+return new Promise((resolve, reject)=>{
+  findReviews(params)
+  .then((data)=>{
+    resolve(formatReviewList(data));
+  })
+  .catch((err)=>{
+    reject(err);
+  })
 })
+//return formatReviewList(result);
+};
+*/
+const getIndexRange = (count, page, length) => {
+  // num pages = number of results / pages
+  // page 1 = 1 to 6
+  // page 2 = 7 to 12
+  // page 3 = 13 to 18
+  //starting index: count*page - count -1
+  //ending index: count*page
+  count = Number(count)
+  page = Number(page)
+  const starting = count * page - count;
+  const ending = count * page ;
+  return {start: starting, end: ending}
+
+}
+
+module.exports.getReviewsByProductID = async (query) => {
+    let data = await db.reviews.find({product_id: query.product_id}, {'_id': 0, 'char._id':0}).lean().exec()
+    //data % query.count or count param
+    let range = getIndexRange(query.count, query.page, data.length);
+    data = Number.isInteger(Number(query.count)) && Number.isInteger((Number(query.page))) ? data.slice(range.start, range.end) : data;
+    console.log(data)
+    const output =  {
+      product: query.product_id,
+      page: Number(query.page),
+      count: data.length,
+      results: data,
+    }
+    return output;
+}
