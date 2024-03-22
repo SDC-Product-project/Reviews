@@ -76,12 +76,29 @@ app.get('/reviews/meta',(req, res)=>{
 
 
 app.put('/reviews/:review_id/helpful',(req, res)=>{
-  res.send(req.params.review_id)
-  res.end();
+  db.markAsHelpful(req.params.review_id)
+  .then((data)=>{
+    res.send(data);
+  })
+  .catch((err)=>{
+    console.log(err)
+  })
+  .finally(()=>{
+    res.end();
+  })
 })
 app.put('/reviews/:review_id/report',(req, res)=>{
-  res.send(req.parms.review_id)
-  res.end();
+  db.report(req.params.review_id)
+  .then((data)=>{
+    res.send(data);
+    //console.log(res)
+  })
+  .catch((err)=>{
+    console.log(err)
+  })
+  .finally(()=>{
+    res.end();
+  })
 })
 
 app.post('/reviews', (req, res)=>{

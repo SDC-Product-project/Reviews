@@ -107,3 +107,12 @@ module.exports.getReviewsByProductID = async (query) => {
     }
     return output;
 }
+
+module.exports.markAsHelpful = async (review_id) =>{
+  let res = await db.reviews.findOne({id: review_id}, {$inc: {helpful: 1}}).lean().exec();
+  return res;
+}
+module.exports.report = async (review_id) =>{
+  let res = await db.reviews.findOne({id: review_id}, {reported: true}).lean().exec();
+  return res;
+}
