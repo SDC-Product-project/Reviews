@@ -70,14 +70,20 @@ product_id	integer	Required ID of the product for which data should be returned
 
 */
 app.get('/reviews/meta',(req, res)=>{
-  res.send(req.query)
-  res.end();
+  db.getMetadata(Number(req.query.product_id))
+  .then((data)=>{
+    res.send(data)
+    res.status(201)
+  })
+  .catch((err)=>{ res.send(err) })
+  .finally(()=>{ res.end() })
 })
 
 
 app.put('/reviews/:review_id/helpful',(req, res)=>{
   db.markAsHelpful(req.params.review_id)
   .then((data)=>{
+    res.status(204)
     res.send(data);
   })
   .catch((err)=>{
@@ -90,8 +96,8 @@ app.put('/reviews/:review_id/helpful',(req, res)=>{
 app.put('/reviews/:review_id/report',(req, res)=>{
   db.report(req.params.review_id)
   .then((data)=>{
+    res.status(204)
     res.send(data);
-    //console.log(res)
   })
   .catch((err)=>{
     console.log(err)
@@ -108,3 +114,4 @@ app.post('/reviews', (req, res)=>{
 app.listen(3000, ()=>{
     console.log(`listening on port ${port}`);
 });
+
