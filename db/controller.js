@@ -69,7 +69,19 @@ return new Promise((resolve, reject)=>{
 //return formatReviewList(result);
 };
 */
-const getIndexRange = (count, page, length) => {
+const formatReviewList = ((objArray)=>{
+  const result = objArray.map((item)=>{
+    return {
+      ...item,
+      characteristics: undefined,
+      char: undefined,
+      reported: undefined,
+      reviewer_email: undefined
+    }
+  })
+  return result;
+});
+const getIndexRange = (count, page) => {
   // num pages = number of results / pages
   // page 1 = 1 to 6
   // page 2 = 7 to 12
@@ -83,18 +95,15 @@ const getIndexRange = (count, page, length) => {
   return {start: starting, end: ending}
 
 }
-
+//Implement sorting in get request by the three metrics.
 module.exports.getReviewsByProductID = async (query) => {
-    let data = await db.reviews.find({product_id: query.product_id}, {'_id': 0, 'char._id':0}).lean().exec()
-    //data % query.count or count param
-    let range = getIndexRange(query.count, query.page, data.length);
-    data = Number.isInteger(Number(query.count)) && Number.isInteger((Number(query.page))) ? data.slice(range.start, range.end) : data;
-    console.log(data)
+    let range = getIndexRange(query.count, query.page);
+    let data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({/*helpfulness*/id: 1}).limit(query.count || 1000).skip(range.start).lean().exec();
     const output =  {
       product: query.product_id,
       page: Number(query.page),
       count: data.length,
-      results: data,
+      results: formatReviewList(data),
     }
     return output;
 }
