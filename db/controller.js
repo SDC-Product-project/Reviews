@@ -1,79 +1,7 @@
 
 const db = require('./schema.js')
-const test = async()=>{
-}
-//console.log(a);
-/*
- await db.reviews.create(
-   { productID: 123456,
-     reviewer_name: "Chris",
-     email: "email@email.com",
-     rating: 4,
-     summary: "Test summary",
-     body: "This is my review, 50char",
-     recommend: true,
-     helpfulness: 4,
-     date: new Date(),
-     reported: false,
-     response: "Test reply",
-     photos: ['https://i.imgur.com/B1MCOtx.jpeg', 'https://i.imgur.com/B1MCOtx.jpeg'],
-     characteristics: [
-      {
-       _characteristic: a[0]._id,
-       rating: 5
-      },
-      {
-        _characteristic: a[1]._id,
-        rating: 2
-       },
-
-    ]
-   }
- )
-
- let res = await db.reviews.findOne({reviewer_name: 'Chris'})
- .populate({
-   path: 'characteristics',
-   populate: {path: '_characteristic', populate: 'name'},
- },)
- .exec()
- */
-
-/*
- const formatReviewList = ((objArray)=>{
-  const result = objArray.map((item)=>{
-    return {
-      ...item,
-      characteristics: item.char,
-      char: undefined
-    }
-  })
-  return result;
-  });
-
-
-const findReviews  = async (params) => {
-  return db.reviews.find({product_id: params.product_id}, {'_id': 0, 'char._id':0}).lean().exec();
-  };
-
-module.exports.getByProductID =  (params) => {
-return new Promise((resolve, reject)=>{
-  findReviews(params)
-  .then((data)=>{
-    resolve(formatReviewList(data));
-  })
-  .catch((err)=>{
-    reject(err);
-  })
-})
-//return formatReviewList(result);
-};
-*/
 
 //Remove this to improve performance, have db not return this data.
-
-
-
 const formatReviewList = ((objArray)=>{
   const result = objArray.map((item)=>{
     let obj =  item;
@@ -86,20 +14,54 @@ const formatReviewList = ((objArray)=>{
   return result;
 });
 const getIndexRange = (count, page) => {
-  // num pages = number of results / pages
-  // page 1 = 1 to 6
-  // page 2 = 7 to 12
-  // page 3 = 13 to 18
-  //starting index: count*page - count -1
-  //ending index: count*page
   count = Number(count)
   page = Number(page)
   const starting = count * page - count;
   const ending = count * page ;
   return {start: starting, end: ending}
-
 }
 
+const relevantAgg = (product_id)=>([
+  {
+    '$match': {
+      'product_id': Number(product_id)
+    }
+  }, {
+    '$setWindowFields': {
+      'sortBy': {
+        'date': -1
+      },
+      'output': {
+        'dateRank': {
+          '$rank': {}
+        }
+      }
+    }
+  }, {
+    '$setWindowFields': {
+      'sortBy': {
+        'helpfulness': -1
+      },
+      'output': {
+        'helpfulnessRank': {
+          '$rank': {}
+        }
+      }
+    }
+  }, {
+    '$addFields': {
+      'relevantRank': {
+        '$avg': [
+          '$dateRank', '$helpfulnessRank'
+        ]
+      }
+    }
+  }, {
+    '$sort': {
+      'relevantRank': 1
+    }
+  }
+])
 
 //Implement sorting in get request by the three metrics.
 module.exports.getReviewsByProductID = async (query) => {
@@ -110,12 +72,10 @@ module.exports.getReviewsByProductID = async (query) => {
     let data;
     if (query.sort === "helpful"){
       data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({helpfulness: -1}).limit(query.count || 1000).skip(range.start).lean().exec();
-    } else if (query.sort === 'relevant'){
-      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({helpfulness: -1}).limit(query.count || 1000).skip(range.start).lean().exec();
     } else if (query.sort === 'newest'){
       data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({id: -1}).limit(query.count || 1000).skip(range.start).lean().exec();
     } else {
-      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({helpfulness: -1}).limit(query.count || 1000).skip(range.start).lean().exec();
+      return await db.reviews.aggregate(relevantAgg(query.product_id)).exec();
     }
     const output =  {
       product: query.product_id,
@@ -134,19 +94,38 @@ module.exports.report = async (review_id) =>{
   let res = await db.reviews.findOne({id: review_id}, {reported: true}).lean().exec();
   return res;
 }
-const formatCharData = (metadata, charData)=>{
+
+const formatMetadata = (metadata, charData)=>{
+  metadata = metadata[0];
+  console.log('FM', metadata)
 let output = {};
+output.product_id = metadata._id;
+output.ratings = {
+  1: metadata.oneStar,
+  2: metadata.twoStar,
+  3: metadata.threeStar,
+  4: metadata.fourStar,
+  5: metadata.fiveStar,
+}
+output.recommended = {
+  true: metadata.recommend,
+  false: metadata.notrecommend
+}
+
+let charObject = {};
 charData.forEach((data)=>{
-  output[data._id] = {char_id: data.char_id, value: data.avgValue};
+  charObject[data._id] = {char_id: data.char_id, value: data.avgValue};
 })
+output.characteristics = charObject;
 return output;
 }
-module.exports.getMetadata = async ()=>{
+//add product ID param;
+module.exports.getMetadata = async (product_id)=>{
   let metadata = await db.reviews.aggregate(
     [
       {
         '$match': {
-          'product_id': 40346
+          'product_id': Number(product_id)
         }
       }, {
         '$group': {
@@ -167,7 +146,7 @@ module.exports.getMetadata = async ()=>{
     [
       {
         '$match': {
-          'product_id': 40346
+          'product_id': Number(product_id)
         }
       }, {
         '$project': {
@@ -192,47 +171,5 @@ module.exports.getMetadata = async ()=>{
       }
     ]
   )
-  //return formatMetadata(metadata, charMetadata);
-  return metadata;
+  return formatMetadata(metadata, charMetadata);
 }
-/*
-Get Review Metadata
-Returns review metadata for a given product.
-GET /reviews/meta
-Query Parameters
-Parameter	Type	Description
-product_id	integer	Required ID of the product for which data should be returned
-
-{
-    "product_id": "40346",
-    "ratings": {
-        "1": "27",
-        "2": "56",
-        "3": "69",
-        "4": "53",
-        "5": "105"
-    },
-    "recommended": {
-        "false": "88",
-        "true": "222"
-    },
-    "characteristics": {
-        "Fit": {
-            "id": 135224,
-            "value": "3.0000000000000000"
-        },
-        "Length": {
-            "id": 135225,
-            "value": "3.2336065573770492"
-        },
-        "Comfort": {
-            "id": 135226,
-            "value": "3.1557377049180328"
-        },
-        "Quality": {
-            "id": 135227,
-            "value": "3.4750000000000000"
-        }
-    }
-}
-*/
