@@ -68,14 +68,14 @@ module.exports.getReviewsByProductID = async (query) => {
   //If undefined, run the await without sorting.
   //If relevant, do something, do helpfulness for now
   //If helpful sort by helpfulness.
-    let range = getIndexRange(query.count, query.page);
+    let range = getIndexRange(Number(query.count) , query.page);
     let data;
     if (query.sort === "helpful"){
-      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({helpfulness: -1}).limit(query.count || 1000).skip(range.start).lean().exec();
+      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({helpfulness: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
     } else if (query.sort === 'newest'){
-      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({id: -1}).limit(query.count || 1000).skip(range.start).lean().exec();
+      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({id: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
     } else {
-      return await db.reviews.aggregate(relevantAgg(query.product_id)).exec();
+      data = await db.reviews.aggregate(relevantAgg(query.product_id)).limit(Number(query.count) || 1000).skip(range.start).exec();
     }
     const output =  {
       product: query.product_id,
