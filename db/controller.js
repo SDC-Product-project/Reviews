@@ -21,7 +21,7 @@ const getIndexRange = (count, page) => {
   return {start: starting, end: ending}
 }
 
-const relevantAgg = (product_id)=>([
+const relevantAgg = (product_id, skip)=>([
   {
     '$match': {
       'product_id': Number(product_id)
@@ -60,6 +60,8 @@ const relevantAgg = (product_id)=>([
     '$sort': {
       'relevantRank': 1
     }
+  }, {
+    '$skip': skip
   }
 ])
 
@@ -75,7 +77,7 @@ module.exports.getReviewsByProductID = async (query) => {
     } else if (query.sort === 'newest'){
       data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({id: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
     } else {
-      data = await db.reviews.aggregate(relevantAgg(query.product_id)).limit(Number(query.count) || 1000).skip(range.start).exec();
+      data = await db.reviews.aggregate(relevantAgg(query.product_id, range.start)).limit(Number(query.count) || 1000).exec();
     }
     const output =  {
       product: query.product_id,
@@ -173,3 +175,61 @@ module.exports.getMetadata = async (product_id)=>{
   )
   return formatMetadata(metadata, charMetadata);
 }
+/*
+{
+    "product_id": 40346,
+    "rating": 5,
+    "summary": "My summary",
+    "body": "My review",
+    "recommend": true,
+    "name": "Ben",
+    "email": "email@email.com",
+    "photos": [],
+    "characteristics": {
+        "134993": 3,
+        "134994": 5,
+        "134995": 3,
+        "134996": 4
+    }
+}
+*/
+
+
+const formatReviewChar = (names, review)=>{
+  //Create an array of objects
+  let output = [];
+  //console.log('n', names);
+  names.char.forEach((item, index)=>{
+    console.log('i', item)
+    output.push({
+    name: item.name,
+    characteristic_id: item.characteristic_id || index,
+    value: review[item.characteristic_id],
+    })
+  })
+  return output
+}
+module.exports.postReview = async (review) => {
+console.log(review);
+const charNames = await db.reviews.findOne({product_id: 40346}, {'char': 1}).exec()
+const lastReviewID = await db.reviews.find({}, {'id': 1, '_id': 0}).limit(1).sort({$natural:-1}).exec()
+const nextID = lastReviewID[0]['id'] + 1
+const char = formatReviewChar(charNames, review.characteristics);
+const newReview = {
+  ...review,
+  char: char,
+  id: nextID,
+  date: new Date(),
+  helpfulness: 0,
+  reported: false,
+  reviewer_name: review.name,
+  reviewer_email: review.email
+}
+delete newReview.characteristics
+console.log(newReview);
+const newRev = await db.reviews.create(newReview);
+return newRev
+}
+
+
+

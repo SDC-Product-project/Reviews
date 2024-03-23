@@ -79,6 +79,20 @@ app.get('/reviews/meta',(req, res)=>{
   .finally(()=>{ res.end() })
 })
 
+app.post('/reviews', (req, res)=>{
+  db.postReview(req.body)
+  .then((data)=>{
+    res.send(data)
+    res.status(201)
+  })
+  .catch((err)=>{
+    res.send(err)
+    res.status(400)
+  })
+  .finally(()=>{
+    res.end();
+  })
+})
 
 app.put('/reviews/:review_id/helpful',(req, res)=>{
   db.markAsHelpful(req.params.review_id)
@@ -107,9 +121,6 @@ app.put('/reviews/:review_id/report',(req, res)=>{
   })
 })
 
-app.post('/reviews', (req, res)=>{
-  res.end();
-})
 
 app.listen(3000, ()=>{
     console.log(`listening on port ${port}`);
