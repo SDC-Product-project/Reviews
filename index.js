@@ -16,6 +16,13 @@ product_id	integer	Specifies the product for which to retrieve reviews.
 
 
 app.get('/reviews',(req, res)=>{
+  if(req.query.page === undefined){
+    req.query.page = 1;
+  }
+  if(req.query.count === undefined){
+    req.query.count = 5;
+  }
+
   db.getReviewsByProductID(req.query)
   .then((data)=>{
     res.send(data);
