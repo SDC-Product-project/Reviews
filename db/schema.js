@@ -2,7 +2,8 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const model = mongoose.model;
-mongoose.connect('mongodb://localhost:27017/reviews');
+require('dotenv').config()
+mongoose.connect(`${process.env.DB_URL}/reviews`);
 
 const reviewSchema = Schema({
   id: {type: Number, unique: true},
