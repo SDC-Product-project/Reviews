@@ -22,7 +22,6 @@ app.get('/reviews',(req, res)=>{
   if(req.query.count === undefined){
     req.query.count = 5;
   }
-
   db.getReviewsByProductID(req.query)
   .then((data)=>{
     res.send(data);
@@ -33,7 +32,6 @@ app.get('/reviews',(req, res)=>{
   })
 
 })
-
 /*
 Get Review Metadata
 Returns review metadata for a given product.
