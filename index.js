@@ -17,8 +17,9 @@ product_id	integer	Specifies the product for which to retrieve reviews.
 
 
 app.get(`/${process.env.LOADERIO_TOKEN}`, (req, res)=>{
+  res.attachment('filename.txt')
+  res.type('txt')
   res.send(`${process.env.LOADERIO_TOKEN}`)
-  res.end();
 })
 
 app.get('/reviews',(req, res)=>{
