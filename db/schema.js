@@ -19,7 +19,7 @@ const reviewSchema = Schema({
   helpfulness: Number,
   response: String,
   photos: [String],
-  char: [{name: String, characteristic_id: Number, value: Number}],
+  characteristics: {},
 })
 let Review = model('Review', reviewSchema);
 module.exports.reviews = Review;

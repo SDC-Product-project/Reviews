@@ -124,56 +124,198 @@ return output;
 //add product ID param;
 module.exports.getMetadata = async (product_id)=>{
   let metadata = await db.reviews.aggregate(
-    [
-      {
-        '$match': {
-          'product_id': Number(product_id)
+[
+  {
+    '$match': {
+      'product_id': product_id
+    }
+  }, {
+    '$group': {
+      '_id': '$product_id',
+      'recommend': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$recommend', true
+              ]
+            }, 1, 0
+          ]
         }
-      }, {
-        '$group': {
-          '_id': '$product_id',
-          'recommend': {'$sum': {'$cond': [{ '$eq': [ '$recommend', true]}, 1, 0 ]}},
-          'notrecommend': { '$sum': { '$cond': [ { '$eq': [ '$recommend', false ] }, 1, 0]}},
-          'averageRating': {'$avg': '$rating' },
-          'oneStar': {'$sum': { '$cond': [{'$eq': ['$rating', 1]}, 1, 0 ] }},
-          'twoStar': {'$sum': { '$cond': [{ '$eq': [ '$rating', 2 ] }, 1, 0 ] }},
-          'threeStar': { '$sum': {  '$cond': [ { '$eq': [ '$rating', 3 ] }, 1, 0]}},
-          'fourStar': {'$sum': {'$cond': [{ '$eq': [ '$rating', 4 ] }, 1, 0]}},
-          'fiveStar': { '$sum': { '$cond': [{ '$eq': [  '$rating', 5 ]}, 1,0 ]}}
+      },
+      'notrecommend': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$recommend', false
+              ]
+            }, 1, 0
+          ]
+        }
+      },
+      'averageRating': {
+        '$avg': '$rating'
+      },
+      '1': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$rating', 1
+              ]
+            }, 1, 0
+          ]
+        }
+      },
+      '2': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$rating', 2
+              ]
+            }, 1, 0
+          ]
+        }
+      },
+      '3': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$rating', 3
+              ]
+            }, 1, 0
+          ]
+        }
+      },
+      '4': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$rating', 4
+              ]
+            }, 1, 0
+          ]
+        }
+      },
+      '5': {
+        '$sum': {
+          '$cond': [
+            {
+              '$eq': [
+                '$rating', 5
+              ]
+            }, 1, 0
+          ]
         }
       }
-    ]
+    }
+  }, {
+    '$addFields': {
+      'rating': {
+        '1': '$1',
+        '2': '$2',
+        '3': '$3',
+        '4': '$4',
+        '5': '$5'
+      },
+      'recommended': {
+        'true': '$recommend',
+        'false': '$notrecommend'
+      }
+    }
+  }, {
+    '$project': {
+      'product_id': '$_id',
+      '_id': 0,
+      'averageRating': 1,
+      'rating': 1
+    }
+  }
+]
   ).exec();
   let charMetadata = await db.reviews.aggregate(
     [
       {
         '$match': {
-          'product_id': Number(product_id)
+          'product_id': product_id
         }
       }, {
-        '$project': {
-          'char': '$char'
+        '$addFields': {
+          'characteristics': {
+            '$map': {
+              'input': {
+                '$objectToArray': '$characteristics'
+              },
+              'as': 'm',
+              'in': {
+                'name': '$$m.k',
+                'characteristic_id': '$$m.v.characteristic_id',
+                'value': '$$m.v.value'
+              }
+            }
+          }
         }
       }, {
         '$unwind': {
-          'path': '$char',
+          'path': '$characteristics',
           'includeArrayIndex': 'string',
           'preserveNullAndEmptyArrays': true
         }
       }, {
         '$group': {
-          '_id': '$char.name',
+          '_id': '$characteristics.name',
           'char_id': {
-            '$first': '$char.characteristic_id'
+            '$first': '$characteristics.characteristic_id'
           },
           'avgValue': {
-            '$avg': '$char.value'
+            '$avg': '$characteristics.value'
           }
+        }
+      }, {
+        '$addFields': {
+          'characteristics': {
+            '$mergeObjects': [
+              {
+                '$arrayToObject': [
+                  [
+                    {
+                      'k': '$_id',
+                      'v': {
+                        'value': '$avgValue',
+                        'id': '$char_id'
+                      }
+                    }
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      }, {
+        '$replaceRoot': {
+          'newRoot': '$characteristics'
+        }
+      }, {
+        '$group': {
+          '_id': null,
+          'Output': {
+            '$mergeObjects': '$$CURRENT'
+          }
+        }
+      }, {
+        '$replaceRoot': {
+          'newRoot': '$Output'
         }
       }
     ]
   )
-  return formatMetadata(metadata, charMetadata);
+  //return formatMetadata(metadata, charMetadata);
+  metadata[0].characteristics = charMetadata[0];
+  return metadata;
 }
 /*
 {
