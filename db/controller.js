@@ -215,7 +215,7 @@ module.exports.getMetadata = async (product_id)=>{
     }
   }, {
     '$addFields': {
-      'rating': {
+      'ratings': {
         '1': '$1',
         '2': '$2',
         '3': '$3',
@@ -231,8 +231,8 @@ module.exports.getMetadata = async (product_id)=>{
     '$project': {
       'product_id': '$_id',
       '_id': 0,
-      'averageRating': 1,
-      'rating': 1
+      'ratings': 1,
+      'recommended': 1,
     }
   }
 ]
@@ -315,7 +315,7 @@ module.exports.getMetadata = async (product_id)=>{
   )
   //return formatMetadata(metadata, charMetadata);
   metadata[0].characteristics = charMetadata[0];
-  return metadata;
+  return metadata[0];
 }
 /*
 {
