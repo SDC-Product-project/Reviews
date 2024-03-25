@@ -1,5 +1,6 @@
 const express = require('express');
 const morgan = require('morgan');
+require('dotenv').config()
 const db = require('./db/controller')
 const app = express();
 const port = 3000;
@@ -14,6 +15,11 @@ sort	text	Changes the sort order of reviews to be based on "newest", "helpful", 
 product_id	integer	Specifies the product for which to retrieve reviews.
 */
 
+
+app.get(`/${process.env.LOADERIO_TOKEN}`, (req, res)=>{
+  res.send(`${process.env.LOADERIO_TOKEN}`)
+  res.end();
+})
 
 app.get('/reviews',(req, res)=>{
   if(req.query.page === undefined){
