@@ -96,7 +96,7 @@ module.exports.report = async (review_id) =>{
   let res = await db.reviews.updateOne({id: review_id}, {reported: true}).lean().exec();
   return res;
 }
-
+/*
 const formatMetadata = (metadata, charData)=>{
   metadata = metadata[0];
   console.log('FM', metadata)
@@ -120,9 +120,12 @@ charData.forEach((data)=>{
 })
 output.characteristics = charObject;
 return output;
-}
+}*/
+
+
 //add product ID param;
-module.exports.getMetadata = async (product_id)=>{
+
+const recalcMetadata = async (product_id)=>{
   let metadata = await db.reviews.aggregate(
 [
   {
@@ -314,6 +317,7 @@ module.exports.getMetadata = async (product_id)=>{
     ]
   )
   //return formatMetadata(metadata, charMetadata);
+  //metadata[0].characteristics = charMetadata[0];
   metadata[0].characteristics = charMetadata[0];
   return metadata[0];
 }
@@ -336,41 +340,65 @@ module.exports.getMetadata = async (product_id)=>{
 }
 */
 
+module.exports.getMetadata = (product_id)=>{
+  return db.metadata.findOne({product_id: product_id}).exec();
+}
+
+//{id: x}
+
+//Name {
+  //id: x
+  //value: x
+//}
+
+
 
 const formatReviewChar = (names, review)=>{
   //Create an array of objects
-  let output = [];
-  //console.log('n', names);
-  names.char.forEach((item, index)=>{
-    console.log('i', item)
-    output.push({
-    name: item.name,
-    characteristic_id: item.characteristic_id || index,
-    value: review[item.characteristic_id],
-    })
+  let output = {};
+  console.log('n', names);
+  console.log(review);
+  Object.keys(names.characteristics).forEach((key, index)=>{
+    //console.log(names.characteristics[key].characteristic_id)
+    let name = key || index;
+    let currentCharID = names.characteristics[key].characteristic_id
+    console.log('ccid', currentCharID);
+    output[name] = {
+      characteristic_id : currentCharID,
+      value: review[currentCharID]
+    }
   })
   return output
 }
+
+
 module.exports.postReview = async (review) => {
-console.log(review);
-const charNames = await db.reviews.findOne({product_id: 40346}, {'char': 1}).exec()
-const lastReviewID = await db.reviews.find({}, {'id': 1, '_id': 0}).limit(1).sort({$natural:-1}).exec()
+const charNames = await db.reviews.findOne({product_id: review.product_id}, {'characteristics': 1}).lean().exec();
+const characteristics = formatReviewChar(charNames, review.characteristics);
+const lastReviewID = await db.reviews.find().sort([['id', -1]] ).limit(1).select({'id': 1});
 const nextID = lastReviewID[0]['id'] + 1
-const char = formatReviewChar(charNames, review.characteristics);
+console.log(nextID)
+console.log('cc', characteristics);
+
 const newReview = {
   ...review,
-  char: char,
   id: nextID,
   date: new Date(),
   helpfulness: 0,
   reported: false,
   reviewer_name: review.name,
-  reviewer_email: review.email
+  reviewer_email: review.email,
+  characteristics: characteristics,
 }
-delete newReview.characteristics
-console.log(newReview);
-const newRev = await db.reviews.create(newReview);
-return newRev
+delete newReview.email;
+delete newReview.name;
+await db.reviews.create(newReview);
+const nextMeta = await recalcMetadata(review.product_id);
+console.log('nm');
+await db.metadata.replaceOne({product_id: review.product_id}, nextMeta).exec()
+let newMeta = await db.metadata.findOne({product_id: review.product_id}).lean().exec();
+console.log()
+return newMeta;
 }
 
 

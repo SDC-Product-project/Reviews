@@ -22,7 +22,25 @@ const reviewSchema = Schema({
   characteristics: {},
 })
 let Review = model('Review', reviewSchema);
+
+const metadataSchema = Schema({
+  product_id: Number,
+  averageRating: Number,
+  ratings: {
+    0: Number,
+    1: Number,
+    2: Number,
+    3: Number,
+    4: Number,
+    5: Number,
+  },
+  recommended: {"true": Number, "false": Number},
+  characteristics: {},
+})
+let Metadata = model('Metadata', metadataSchema, 'metadata');
+
 module.exports.reviews = Review;
+module.exports.metadata = Metadata;
 
 
 
