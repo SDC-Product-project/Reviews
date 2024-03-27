@@ -8,7 +8,7 @@ if(process.env.USER || process.env.USER === undefined){
 } else {
   mongoose.connect(`${process.env.DB_URL}/reviews`, {
     poolSize: 10,
-    authSource: "admin",
+    authSource: "reviews",
     user: process.env.USER,
     pass: process.env.PASS,
     useNewUrlParser: true,
