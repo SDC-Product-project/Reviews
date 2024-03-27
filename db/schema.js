@@ -3,7 +3,11 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const model = mongoose.model;
 require('dotenv').config()
-mongoose.connect(`${process.env.DB_URL}/reviews`);
+if(process.env.USER || process.env.USER === undefined){
+  mongoose.connect(`${process.env.DB_URL}/reviews`)
+} else {
+  mongoose.connect(`${process.env.DB_URL}/reviews`, {auth: {username: process.env.USER, password: process.env.PASS}})
+}
 
 const reviewSchema = Schema({
   id: {type: Number, unique: true},
