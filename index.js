@@ -83,7 +83,7 @@ product_id	integer	Required ID of the product for which data should be returned
 app.get('/reviews/meta',(req, res)=>{
   db.getMetadata(Number(req.query.product_id))
   .then((data)=>{
-    console.log('data', data)
+    //console.log('data', data)
     res.send(data)
     res.status(201)
   })

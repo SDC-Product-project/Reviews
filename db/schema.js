@@ -9,7 +9,9 @@ if(process.env.USER === undefined || process.env.USERNAME === ""){
    mongoose.connect(`${process.env.DB_URL}/reviews`)
 } else {
    mongoose.connect(`${process.env.DB_URL}/reviews`, {
-    authSource: 'reviews',
+    auth: {
+      authSource: 'reviews'
+    },
     user: process.env.USER,
     pass: process.env.PASS,
 })
