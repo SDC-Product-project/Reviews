@@ -340,17 +340,12 @@ const recalcMetadata = async (product_id)=>{
 }
 */
 
+
 module.exports.getMetadata = (product_id)=>{
   return db.metadata.findOne({product_id: product_id}).exec();
 }
-
-//{id: x}
-
-//Name {
-  //id: x
-  //value: x
-//}
-
+//To show the before and after of this optmization.
+module.exports.getMetadata_old = recalcMetadata;
 
 
 const formatReviewChar = (names, review)=>{
