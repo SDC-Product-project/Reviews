@@ -3,18 +3,15 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const model = mongoose.model;
 require('dotenv').config()
-if(process.env.USER || process.env.USER === undefined){
-  mongoose.connect(`${process.env.DB_URL}/reviews`)
+console.log('mytst', process.env.USERNAME);
+
+if(process.env.USER === undefined || process.env.USERNAME === ""){
+   mongoose.connect(`${process.env.DB_URL}/reviews`)
 } else {
-  mongoose.connect(`${process.env.DB_URL}/reviews`, {
-    poolSize: 10,
-    authSource: "reviews",
+   mongoose.connect(`${process.env.DB_URL}/reviews`, {
+    authSource: 'reviews',
     user: process.env.USER,
     pass: process.env.PASS,
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useCreateIndex: true,
-    useFindAndModify: false
 })
 }
 
