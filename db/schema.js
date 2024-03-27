@@ -6,7 +6,16 @@ require('dotenv').config()
 if(process.env.USER || process.env.USER === undefined){
   mongoose.connect(`${process.env.DB_URL}/reviews`)
 } else {
-  mongoose.connect(`${process.env.DB_URL}/reviews`, {auth: {user: process.env.USER, pass: process.env.PASS}})
+  mongoose.connect(`${process.env.DB_URL}/reviews`, {
+    poolSize: 10,
+    authSource: "admin",
+    user: process.env.USER,
+    pass: process.env.PASS,
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true,
+    useFindAndModify: false
+})
 }
 
 const reviewSchema = Schema({
