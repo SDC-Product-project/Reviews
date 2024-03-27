@@ -3,18 +3,16 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const model = mongoose.model;
 require('dotenv').config()
-console.log('mytst', process.env.USERNAME);
 
 if(process.env.USER === undefined || process.env.USERNAME === ""){
    mongoose.connect(`${process.env.DB_URL}/reviews`)
 } else {
-   mongoose.connect(`${process.env.DB_URL}/reviews`, {
-    auth: {
-      authSource: 'reviews'
-    },
-    user: process.env.USER,
+  mongoose.connect(`${process.env.DB_URL}/reviews`, {
+    authSource: process.env.AUTHSOURCE,
+    user: process.env.USERNAME,
     pass: process.env.PASS,
-})
+
+  });
 }
 
 const reviewSchema = Schema({
