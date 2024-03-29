@@ -1,18 +1,6 @@
 
 const db = require('./schema.js')
 
-//Remove this to improve performance, have db not return this data.
-const formatReviewList = ((objArray)=>{
-  const result = objArray.map((item)=>{
-    let obj =  item;
-    delete obj.characteristics;
-    delete obj.char;
-    delete obj.reported;
-    delete obj.reviewer_email;
-    return obj;
-  })
-  return result;
-});
 const getIndexRange = (count, page) => {
   count = Number(count)
   page = Number(page)
@@ -24,7 +12,8 @@ const getIndexRange = (count, page) => {
 const relevantAgg = (product_id, skip)=>([
   {
     '$match': {
-      'product_id': Number(product_id)
+      'product_id': Number(product_id),
+      'reported': false
     }
   }, {
     '$setWindowFields': {
@@ -62,6 +51,13 @@ const relevantAgg = (product_id, skip)=>([
     }
   }, {
     '$skip': skip
+  }, {
+    '$project': {
+      '_id': 0,
+      'reviewer_email': 0,
+      'reported': 0,
+      'characteristics': 0
+    }
   }
 ])
 
@@ -72,18 +68,31 @@ module.exports.getReviewsByProductID = async (query) => {
   //If helpful sort by helpfulness.
     let range = getIndexRange(Number(query.count) , query.page);
     let data;
+    console.log(query);
     if (query.sort === "helpful"){
-      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({helpfulness: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
+      data = await db.reviews.find({product_id: Number(query.product_id), reported: false}, {
+        '_id': 0,
+        'reviewer_email': 0,
+        'reported': 0,
+        'characteristics': 0
+      }).sort({helpfulness: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
     } else if (query.sort === 'newest'){
-      data = await db.reviews.find({product_id: query.product_id, reported: false}, {'_id': 0, 'char._id':0}).sort({id: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
+      data = await db.reviews.find({product_id: Number(query.product_id), reported: false}, {
+        '_id': 0,
+        'reviewer_email': 0,
+        'reported': 0,
+        'characteristics': 0
+      }).sort({id: -1}).limit(Number(query.count)  || 1000).skip(range.start).lean().exec();
+
     } else {
       data = await db.reviews.aggregate(relevantAgg(query.product_id, range.start)).limit(Number(query.count) || 1000).exec();
     }
+    console.log(range)
     const output =  {
       product: query.product_id,
       page: Number(query.page),
       count: data.length,
-      results: formatReviewList(data),
+      results: data,
     }
     return output;
 }
